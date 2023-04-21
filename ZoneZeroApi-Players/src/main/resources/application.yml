@@ -1,0 +1,7 @@
+micronaut:
+  server:
+    port: 7224
+  application:
+    name: ZoneZeroAPI-Players
+  security:
+    enabled: false

@@ -1,0 +1,19 @@
+<mjml>
+    <mj-head>
+        <mj-font name="Montserrat" href="https://fonts.googleapis.com/css?family=Montserrat" />
+    </mj-head>
+    <mj-body>
+        <mj-section background-color="#000000">
+            <mj-column>
+                <mj-text align="center" color="#ffffff" container-background-color="#000000" font-family="Montserrat, Helvetica, Arial, sans-serif" font-size="30px" line-height="1.5" text-transform="uppercase"><h1 th:text="${projectTitle}"></h1></mj-text>
+                <mj-text align="center" color="#ffffff" font-family="Montserrat, Helvetica, Arial, sans-serif"><h1 th:text="${label}"></h1></mj-text>
+                <mj-text align="center" color="#ffffff" font-size="14px" font-family="Montserrat, Helvetica, Arial, sans-serif"><h3 th:text="${text}"></h3></mj-text>
+                <mj-divider border-color="#ffffff"></mj-divider>
+                <mj-text font-style="bold" align="center" color="#DFBA00"><h1 th:text="${code}"></h1></mj-text>
+                <mj-divider border-color="#ffffff"></mj-divider>
+                <mj-text align="center" color="#666666" font-family="Montserrat, Helvetica, Arial, sans-serif"><h4 th:text="${footer}"></h4></mj-text>
+                <mj-text align="center" color="#D3F000" font-family="Montserrat, Helvetica, Arial, sans-serif"><h4 th:text="${url}"></h4></mj-text>
+            </mj-column>
+        </mj-section>
+    </mj-body>
+</mjml>

@@ -1,0 +1,10 @@
+[mongo]
+host = "localhost"
+port = 27017
+login = "admin"
+password = "admin"
+dbName = "zonezero"
+authDb = "admin"
+
+[sentry]
+dsn = "https://1f4dfd1d687a4703b7420d99953e3734@o1138855.ingest.sentry.io/4504871269105664"

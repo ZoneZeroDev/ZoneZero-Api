@@ -1,0 +1,7 @@
+micronaut:
+  server:
+    port: 7226
+  application:
+    name: ZoneZeroAPI-Web
+  security:
+    enabled: false

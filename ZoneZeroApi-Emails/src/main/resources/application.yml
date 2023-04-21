@@ -1,0 +1,7 @@
+micronaut:
+  server:
+    port: 7227
+  application:
+    name: ZoneZeroAPI-Email
+  security:
+    enabled: false
