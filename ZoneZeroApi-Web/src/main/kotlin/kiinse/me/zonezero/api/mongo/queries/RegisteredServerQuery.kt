@@ -6,6 +6,7 @@ import kiinse.me.zonezero.api.mongo.MongoDb
 import kiinse.me.zonezero.api.server.QueryServer
 import kiinse.me.zonezero.api.server.RegisteredServer
 import org.bson.Document
+import org.json.JSONObject
 
 object RegisteredServerQuery {
 
@@ -54,30 +55,48 @@ object RegisteredServerQuery {
         }
     }
 
+    fun saveServer(queryServer: QueryServer, email: String) {
+        saveServer(RegisteredServer(email,
+                                    queryServer.name,
+                                    queryServer.maxPlayers,
+                                    queryServer.pluginVersion,
+                                    queryServer.allowEnd,
+                                    queryServer.allowNether,
+                                    queryServer.allowFlight,
+                                    queryServer.bukkitVersion,
+                                    queryServer.monsterSpawnLimit,
+                                    queryServer.settingsIp,
+                                    queryServer.motd,
+                                    queryServer.settingsPort,
+                                    queryServer.worldType,
+                                    queryServer.generateStructures,
+                                    queryServer.spawnRadius,
+                                    queryServer.viewDistance,
+                                    queryServer.worlds,
+                                    queryServer.ip))
+    }
+
     fun updateServer(queryServer: QueryServer) {
         if (hasServer(queryServer)) {
             val registeredServer = getServer(queryServer)!!
-            saveServer(
-                RegisteredServer(
-                    registeredServer.email,
-                    queryServer.name,
-                    queryServer.maxPlayers,
-                    queryServer.pluginVersion,
-                    queryServer.allowEnd,
-                    queryServer.allowNether,
-                    queryServer.allowFlight,
-                    queryServer.bukkitVersion,
-                    queryServer.monsterSpawnLimit,
-                    queryServer.settingsIp,
-                    queryServer.motd,
-                    queryServer.settingsPort,
-                    queryServer.worldType,
-                    queryServer.generateStructures,
-                    queryServer.spawnRadius,
-                    queryServer.viewDistance,
-                    queryServer.worlds,
-                    queryServer.ip)
-            )
+            saveServer(RegisteredServer(registeredServer.email,
+                                        queryServer.name,
+                                        queryServer.maxPlayers,
+                                        queryServer.pluginVersion,
+                                        queryServer.allowEnd,
+                                        queryServer.allowNether,
+                                        queryServer.allowFlight,
+                                        queryServer.bukkitVersion,
+                                        queryServer.monsterSpawnLimit,
+                                        queryServer.settingsIp,
+                                        queryServer.motd,
+                                        queryServer.settingsPort,
+                                        queryServer.worldType,
+                                        queryServer.generateStructures,
+                                        queryServer.spawnRadius,
+                                        queryServer.viewDistance,
+                                        queryServer.worlds,
+                                        queryServer.ip))
         }
     }
 
@@ -108,6 +127,23 @@ object RegisteredServerQuery {
         val query = Document()
         query["_id"] = queryServer.getId()
         return parseServerResult(collection!!.find(query).first())
+    }
+
+    fun getServer(serverId: String): RegisteredServer? {
+        val query = Document()
+        query["_id"] = serverId
+        return parseServerResult(collection!!.find(query).first())
+    }
+
+    fun getServersByEmail(email: String): JSONObject {
+        val query = Document()
+        query["email"] = email
+        val json = JSONObject()
+        collection!!.find(query).forEach {
+            val server = parseServerResult(it)!!
+            json.put(server.getId(), server.toJson())
+        }
+        return json
     }
 
     fun hasServer(ip: String, email: String): Boolean {

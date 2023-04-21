@@ -72,6 +72,13 @@ object AccountQuery {
         return account
     }
 
+    fun regenToken(oldAccount: Account, newAccount: Account): Account {
+        val query = Document()
+        query["_id"] = oldAccount.email
+        collection!!.findOneAndReplace(query, accountToDocument(newAccount))
+        return newAccount
+    }
+
     fun getAccount(jwt: String): Account? {
         val query = Document()
         query["jwt"] = jwt
