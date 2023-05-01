@@ -3,8 +3,8 @@ package kiinse.me.zonezero.api
 import io.micronaut.runtime.Micronaut.run
 import io.sentry.Sentry
 import kiinse.me.zonezero.api.core.config.ConfigFactory
-import kiinse.me.zonezero.api.mongo.queries.PlayerQuery
-import kiinse.me.zonezero.api.mongo.queries.TwoFaQuery
+import kiinse.me.zonezero.api.core.mongo.queries.PlayerQuery
+import kiinse.me.zonezero.api.core.mongo.queries.TwoFaQuery
 import kiinse.me.zonezero.api.services.players.PlayerController
 import kiinse.me.zonezero.api.services.players.PlayerUtils
 import kiinse.me.zonezero.api.core.utils.RequestUtils

@@ -2,7 +2,7 @@ package kiinse.me.zonezero.api.security.annotations
 
 import io.micronaut.aop.Around
 import io.micronaut.core.annotation.Internal
-import kiinse.me.zonezero.api.security.enums.AccountType
+import kiinse.me.zonezero.api.core.security.enums.AccountType
 
 @Suppress("UNUSED")
 @Target(AnnotationTarget.FUNCTION)

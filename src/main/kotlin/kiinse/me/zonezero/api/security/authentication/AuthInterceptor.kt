@@ -9,8 +9,9 @@ import io.micronaut.http.exceptions.HttpStatusException
 import io.sentry.Sentry
 import jakarta.inject.Singleton
 import kiinse.me.zonezero.api.core.exceptions.AuthException
+import kiinse.me.zonezero.api.core.security.Account
 import kiinse.me.zonezero.api.security.annotations.Authentication
-import kiinse.me.zonezero.api.security.enums.AccountType
+import kiinse.me.zonezero.api.core.security.enums.AccountType
 import kiinse.me.zonezero.api.utils.RequestUtils
 import kiinse.me.zonezero.api.utils.ResponseFactory
 import kotlinx.coroutines.async
@@ -45,7 +46,7 @@ class AuthInterceptor : MethodInterceptor<Any, Any> {
                            return@runBlocking context.proceed() // TODO: Убрать
                         }
 
-                        val account = AuthService.login(bearer)
+                        val account = Account.byJwt(bearer)
                         val checkTimeout = async { AuthTimeout.checkTimeout(request!!) }
                         val checkPermissions = async { AuthChecks.checkPermissions(permissions, account.type) }
                         val checkAccountType = async { AuthChecks.checkAccountType(request!!, account) }

@@ -4,11 +4,11 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import kiinse.me.zonezero.api.core.exceptions.PlayerException
-import kiinse.me.zonezero.api.mongo.queries.PlayerQuery
-import kiinse.me.zonezero.api.mongo.queries.TwoFaQuery
-import kiinse.me.zonezero.api.players.Player
-import kiinse.me.zonezero.api.twofa.TwoFaData
-import kiinse.me.zonezero.api.twofa.enums.QueryType
+import kiinse.me.zonezero.api.core.mongo.queries.PlayerQuery
+import kiinse.me.zonezero.api.core.mongo.queries.TwoFaQuery
+import kiinse.me.zonezero.api.core.players.Player
+import kiinse.me.zonezero.api.core.twofa.TwoFaData
+import kiinse.me.zonezero.api.core.twofa.enums.QueryType
 import kiinse.me.zonezero.api.core.utils.RequestUtils
 import kiinse.me.zonezero.api.core.utils.Response
 import kotlinx.coroutines.async
@@ -53,7 +53,7 @@ object PlayerUtils {
             return@runWithCatch runBlocking {
                 val body = async { RequestUtils.getBody(request) }
                 val playerName = async { RequestUtils.getHeader(request, "player") }
-                val player = async { playerQuery.getPlayer(playerName.await()) }
+                val player = async { Player.valueOf(playerName.await()) }
                 runnable(body.await(), player.await())
             }
         }
@@ -65,7 +65,7 @@ object PlayerUtils {
                 val body = async { RequestUtils.getBody(request) }
                 val playerName = async { RequestUtils.getHeader(request, "player") }
                 val password = async { body.await().getString(passwordKey) }
-                val player = async { playerQuery.getPlayer(playerName.await(), password.await()) }
+                val player = async { Player.valueOf(playerName.await(), password.await()) }
                 if (player.await() == null && playerQuery.hasPlayer(playerName.await())) {
                     throw PlayerException(HttpStatus.UNAUTHORIZED, "Wrong password!")
                 }

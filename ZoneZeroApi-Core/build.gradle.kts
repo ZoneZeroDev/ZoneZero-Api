@@ -21,6 +21,8 @@ dependencies {
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("org.slf4j:slf4j-log4j12:2.0.5")
     implementation("org.apache.httpcomponents:fluent-hc:4.5.14")
+    implementation("org.mindrot:jbcrypt:0.4")
+    implementation("com.auth0:java-jwt:4.3.0")
 
     implementation("org.tomlj:tomlj:1.1.0")
 

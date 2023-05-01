@@ -9,9 +9,8 @@ import kiinse.me.zonezero.api.core.exceptions.RSAException
 import kiinse.me.zonezero.api.core.exceptions.RequestException
 import kiinse.me.zonezero.api.core.rsa.data.EncryptedMessage
 import kiinse.me.zonezero.api.core.utils.Response
-import kiinse.me.zonezero.api.security.Account
+import kiinse.me.zonezero.api.core.security.Account
 import kiinse.me.zonezero.api.security.ApiRSA
-import kiinse.me.zonezero.api.security.authentication.AuthService
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import org.json.JSONException
@@ -22,17 +21,16 @@ import org.slf4j.LoggerFactory
 @Suppress("UNUSED")
 object RequestUtils {
 
-    private val authService: AuthService = AuthService
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
     fun runOnAccount(request: HttpRequest<String?>, runnable: (Account) -> HttpResponse<Response>): HttpResponse<Response> {
-        return runWithCatch(request) { return@runWithCatch runnable(authService.login(getBearer(request))) }
+        return runWithCatch(request) { return@runWithCatch runnable(Account.byJwt(getBearer(request))) }
     }
 
     fun runOnBody(request: HttpRequest<String?>, runnable: (JSONObject, Account) -> HttpResponse<Response>): HttpResponse<Response> = runBlocking {
         val body = async { getBody(request) }
         val bearer = async { getBearer(request) }
-        val account = async { authService.login(bearer.await()) }
+        val account = async { Account.byJwt(bearer.await()) }
         return@runBlocking runWithCatch(request) {
             return@runWithCatch runBlocking {
                 runnable(body.await(), account.await())

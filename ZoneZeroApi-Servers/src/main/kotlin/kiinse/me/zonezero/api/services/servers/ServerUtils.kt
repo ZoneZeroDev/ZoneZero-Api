@@ -4,8 +4,8 @@ import com.vdurmont.semver4j.Semver
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
-import kiinse.me.zonezero.api.mongo.queries.QueryServerQuery
-import kiinse.me.zonezero.api.server.QueryServer
+import kiinse.me.zonezero.api.core.mongo.queries.QueryServerQuery
+import kiinse.me.zonezero.api.core.server.QueryServer
 import kiinse.me.zonezero.api.core.utils.RequestUtils
 import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.core.utils.ResponseFactory

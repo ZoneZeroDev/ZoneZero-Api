@@ -9,7 +9,7 @@ import io.micronaut.http.annotation.Post
 import kiinse.me.zonezero.api.core.config.Addresses
 import kiinse.me.zonezero.api.security.ApiRSA
 import kiinse.me.zonezero.api.security.annotations.Authentication
-import kiinse.me.zonezero.api.security.enums.AccountType
+import kiinse.me.zonezero.api.core.security.enums.AccountType
 import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.services.ServiceUtils
 import kiinse.me.zonezero.api.utils.ResponseFactory

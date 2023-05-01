@@ -10,14 +10,14 @@ import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
 import kiinse.me.zonezero.api.core.utils.RequestUtils
-import kiinse.me.zonezero.api.mongo.queries.AccountQuery
-import kiinse.me.zonezero.api.mongo.queries.QueryServerQuery
-import kiinse.me.zonezero.api.mongo.queries.RegisteredServerQuery
-import kiinse.me.zonezero.api.security.Account
-import kiinse.me.zonezero.api.security.enums.AccountType
-import kiinse.me.zonezero.api.services.ServiceUtils
+import kiinse.me.zonezero.api.core.mongo.queries.AccountQuery
+import kiinse.me.zonezero.api.core.mongo.queries.QueryServerQuery
+import kiinse.me.zonezero.api.core.mongo.queries.RegisteredServerQuery
+import kiinse.me.zonezero.api.core.security.Account
+import kiinse.me.zonezero.api.core.security.enums.AccountType
 import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.core.utils.ResponseFactory
+import kiinse.me.zonezero.api.core.utils.Utils
 import kiinse.me.zonezero.api.services.body.*
 import java.time.Instant
 import java.util.concurrent.TimeUnit
@@ -55,7 +55,7 @@ open class WebController {
                 .withExpiresAt(Instant.now().plusSeconds(TimeUnit.DAYS.toSeconds(1000000000)))
                 .sign(Algorithm.HMAC512(body.username + body.password))
             accounts.createAccount(Account(body.username, body.email,
-                                               ServiceUtils.bcryptHash(body.password), jwt, AccountType.SERVER_1000))
+                                           Utils.bcryptHash(body.password), jwt, AccountType.SERVER_1000))
             return@runWithCatch ResponseFactory.create(HttpStatus.OK, jwt)
         }
     }
@@ -65,11 +65,14 @@ open class WebController {
         return RequestUtils.runWithCatch {
             if (body.username != null) {
                 if (!accounts.hasLogin(body.username)) return@runWithCatch ResponseFactory.create(HttpStatus.NOT_FOUND, "User not found!")
-                val account = accounts.getAccountByNamePass(body.username, body.password) ?: return@runWithCatch ResponseFactory.create(HttpStatus.FORBIDDEN, "Password mismatch!")
+                val account = accounts.getAccountByNamePass(body.username, body.password)
+                if (account == null || !account.checkPassword(body.password)) {
+                    return@runWithCatch ResponseFactory.create(HttpStatus.FORBIDDEN, "Password mismatch!")
+                }
                 return@runWithCatch ResponseFactory.create(HttpStatus.OK, account.toJson())
             } else {
                 if (!accounts.hasEmail(body.email!!)) return@runWithCatch ResponseFactory.create(HttpStatus.NOT_FOUND, "User not found!")
-                val account = accounts.getAccountByEmailPass(body.email, body.password) ?: return@runWithCatch ResponseFactory.create(HttpStatus.FORBIDDEN, "Password mismatch!")
+                val account = Account.valueOf(body.email, body.password) ?: return@runWithCatch ResponseFactory.create(HttpStatus.FORBIDDEN, "Password mismatch!")
                 return@runWithCatch ResponseFactory.create(HttpStatus.OK, account.toJson())
             }
         }
@@ -119,7 +122,7 @@ open class WebController {
                 .withExpiresAt(Instant.now().plusSeconds(TimeUnit.DAYS.toSeconds(1000000000)))
                 .sign(Algorithm.HMAC512(body.username + body.password))
             return@runWithCatch ResponseFactory.create(HttpStatus.OK, accounts.regenToken(account, Account(body.username, account.email,
-                                                                                                           ServiceUtils.bcryptHash(body.password), jwt, AccountType.SERVER_1000)).toJson())
+                                                                                                           Utils.bcryptHash(body.password), jwt, AccountType.SERVER_1000)).toJson())
         }
     }
 }

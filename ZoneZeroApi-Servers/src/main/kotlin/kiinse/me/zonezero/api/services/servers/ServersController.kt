@@ -6,9 +6,9 @@ import io.micronaut.http.HttpStatus
 import io.micronaut.http.annotation.Controller
 import io.micronaut.http.annotation.Get
 import io.micronaut.http.annotation.Post
-import kiinse.me.zonezero.api.mongo.queries.AccountQuery
-import kiinse.me.zonezero.api.mongo.queries.QueryServerQuery
-import kiinse.me.zonezero.api.mongo.queries.RegisteredServerQuery
+import kiinse.me.zonezero.api.core.mongo.queries.AccountQuery
+import kiinse.me.zonezero.api.core.mongo.queries.QueryServerQuery
+import kiinse.me.zonezero.api.core.mongo.queries.RegisteredServerQuery
 import kiinse.me.zonezero.api.core.utils.RequestUtils
 import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.core.utils.ResponseFactory

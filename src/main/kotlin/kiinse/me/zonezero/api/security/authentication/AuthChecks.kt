@@ -4,9 +4,9 @@ import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import kiinse.me.zonezero.api.core.exceptions.AccountException
 import kiinse.me.zonezero.api.core.exceptions.RequestException
-import kiinse.me.zonezero.api.mongo.queries.RegisteredServerQuery
-import kiinse.me.zonezero.api.security.Account
-import kiinse.me.zonezero.api.security.enums.AccountType
+import kiinse.me.zonezero.api.core.mongo.queries.RegisteredServerQuery
+import kiinse.me.zonezero.api.core.security.Account
+import kiinse.me.zonezero.api.core.security.enums.AccountType
 import kiinse.me.zonezero.api.utils.RequestUtils
 
 object AuthChecks {
