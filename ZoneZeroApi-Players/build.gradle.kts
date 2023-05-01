@@ -9,7 +9,7 @@ plugins {
     id("io.micronaut.application") version "3.6.3"
 }
 
-version = "1.0.4"
+version = "1.0.5"
 group = "kiinse.me.zonezero.api"
 java.sourceCompatibility = JavaVersion.VERSION_19
 

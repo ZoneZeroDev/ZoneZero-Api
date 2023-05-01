@@ -122,9 +122,7 @@ open class PlayerController {
                 if (player.twoFaType != TwoFaType.NONE) {
                     return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE, player.twoFaType.toString())
                 }
-                val queryBody = JSONObject()
-                queryBody.put("email", email)
-                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.ENABLE_TFA, player.setTwoFaType(TwoFaType.EMAIL).setTwoFa(email), queryBody))
+                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.ENABLE_TFA, player.setTwoFaType(TwoFaType.EMAIL).setTwoFa(email), JSONObject()))
                 return@runBlocking ResponseFactory.create(HttpStatus.OK)
             }
         }
@@ -154,7 +152,7 @@ open class PlayerController {
                 val queryBody = JSONObject(query.data)
                 when (query.queryType) {
                     QueryType.ENABLE_TFA      -> {
-                        playerQuery.updatePlayer(player.setTwoFa(queryBody.getString("email")).setTwoFaType(TwoFaType.EMAIL))
+                        playerQuery.updatePlayer(player.setTwoFa(query.address).setTwoFaType(TwoFaType.EMAIL))
                     }
 
                     QueryType.DISABLE_TFA     -> {
