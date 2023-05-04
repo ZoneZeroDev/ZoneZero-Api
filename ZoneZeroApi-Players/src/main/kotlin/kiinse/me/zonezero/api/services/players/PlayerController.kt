@@ -104,8 +104,6 @@ open class PlayerController {
         }
     }
 
-    // TODO: Отключить изменение пароля для пользователя "test"
-
     @Post("/changePassword")
     open fun changePassword(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayerPass(request, "oldPassword") { body, player ->
@@ -168,7 +166,9 @@ open class PlayerController {
                 if (Instant.now() > query.time) throw QueryException(HttpStatus.FORBIDDEN, "2FA code is outdated!")
                 when (query.queryType) {
                     QueryType.ENABLE_TFA      -> {
-                        playerQuery.updatePlayer(player.setTwoFa(query.address).setTwoFaType(TwoFaType.EMAIL))
+                        if (!player.login.equals("test_standard", ignoreCase = true)) {
+                            playerQuery.updatePlayer(player.setTwoFa(query.address).setTwoFaType(TwoFaType.EMAIL))
+                        }
                     }
 
                     QueryType.DISABLE_TFA     -> {
