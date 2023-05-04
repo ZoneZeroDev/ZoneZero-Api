@@ -10,7 +10,6 @@ import kiinse.me.zonezero.api.core.mongo.queries.AccountQuery
 import kiinse.me.zonezero.api.core.mongo.queries.QueryServerQuery
 import kiinse.me.zonezero.api.core.mongo.queries.RegisteredServerQuery
 import kiinse.me.zonezero.api.core.utils.RequestUtils
-import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.core.utils.ResponseFactory
 
 @Controller("/server")
@@ -21,12 +20,12 @@ open class ServersController {
     private val registeredServer: RegisteredServerQuery = RegisteredServerQuery
 
     @Get("/status")
-    fun status(request: HttpRequest<String?>): HttpResponse<Response> {
+    fun status(request: HttpRequest<String?>): HttpResponse<String> {
         return ResponseFactory.create(HttpStatus.OK)
     }
 
     @Post("/getCode")
-    open fun getCode(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun getCode(request: HttpRequest<String?>): HttpResponse<String> {
         return ServerUtils.onServerAllow(request) { queryServer ->
             val token = RequestUtils.getBearer(request)
             if (token != null) {

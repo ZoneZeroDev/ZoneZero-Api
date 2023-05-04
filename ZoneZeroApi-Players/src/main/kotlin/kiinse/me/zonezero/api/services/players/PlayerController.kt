@@ -14,9 +14,10 @@ import kiinse.me.zonezero.api.core.players.Player
 import kiinse.me.zonezero.api.core.players.enums.TwoFaType
 import kiinse.me.zonezero.api.core.twofa.enums.QueryType
 import kiinse.me.zonezero.api.core.utils.*
+import kiinse.me.zonezero.api.services.body.PlayerBody
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
 import java.time.Instant
 
 @Controller("/players")
@@ -27,18 +28,18 @@ open class PlayerController {
     private val tfaQuery: TwoFaQuery = TwoFaQuery
 
     @Get("/status")
-    fun status(request: HttpRequest<String?>): HttpResponse<Response> {
+    fun status(request: HttpRequest<String?>): HttpResponse<String> {
         return ResponseFactory.create(HttpStatus.OK)
     }
 
     @Post("/login/standard")
-    open fun loginPlayerStandard(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun loginPlayerStandard(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayerPass(request, "password") { body, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
                 val ip = async { PlayerUtils.getPlayerIp(body) }
                 if (player.twoFaType != TwoFaType.NONE) {
-                    tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.AUTH, player, JSONObject()))
+                    tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.AUTH, player, PlayerBody()))
                     return@runBlocking ResponseFactory.create(HttpStatus.ACCEPTED)
                 }
                 playerQuery.updatePlayer(player.setIp(ip.await()))
@@ -48,14 +49,14 @@ open class PlayerController {
     }
 
     @Post("/login/ip")
-    open fun loginPlayerIp(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun loginPlayerIp(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayer(request) { body, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
                 val ip = PlayerUtils.getPlayerIp(body)
                 if (!ip.isNullOrEmpty() && ip != "null" && ip != "127.0.0.1" && player.lastIp == ip) {
                     if (player.twoFaType != TwoFaType.NONE) {
-                        tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.AUTH, player, JSONObject()))
+                        tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.AUTH, player, PlayerBody()))
                         return@runBlocking ResponseFactory.create(HttpStatus.ACCEPTED)
                     }
                     return@runBlocking ResponseFactory.create(HttpStatus.OK)
@@ -66,7 +67,7 @@ open class PlayerController {
     }
 
     @Post("/register")
-    open fun registerPlayer(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun registerPlayer(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayer(request) { body, player ->
             runBlocking {
                 if (player != null) throw PlayerException(HttpStatus.FORBIDDEN, "Player already registered!")
@@ -76,32 +77,48 @@ open class PlayerController {
                     return@async login
                 }
                 val password = async {
-                    val password = PlayerUtils.getStringOrNull(body, "password")
+                    val password = body.password
                     if (password.isNullOrBlank()) throw PlayerException(HttpStatus.UNAUTHORIZED, "Player password is empty!")
                     if (password.length < 8) throw PlayerException(HttpStatus.NOT_ACCEPTABLE, "Password size cannot be less than 8")
                     return@async password
                 }
-                val ip = async { PlayerUtils.getStringOrNull(body, "ip") ?: "" }
+                val ip = async { PlayerUtils.getPlayerIp(body) ?: "" }
                 playerQuery.createPlayer(Player(login.await(), Utils.bcryptHash(password.await()), TwoFaType.NONE, "", ip.await()))
                 return@runBlocking ResponseFactory.create(HttpStatus.OK)
             }
         }
     }
 
+    @Post("/remove")
+    open fun removePlayer(request: HttpRequest<String?>): HttpResponse<String> {
+        return PlayerUtils.runOnPlayerPass(request, "password") { _, player ->
+            runBlocking {
+                if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
+                if (player.twoFaType != TwoFaType.NONE) {
+                    tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.ACCOUNT_REMOVE, player, PlayerBody()))
+                    return@runBlocking ResponseFactory.create(HttpStatus.ACCEPTED)
+                }
+                playerQuery.removePlayer(player)
+                return@runBlocking ResponseFactory.create(HttpStatus.OK)
+            }
+        }
+    }
+
+    // TODO: Отключить изменение пароля для пользователя "test"
+
     @Post("/changePassword")
-    open fun changePassword(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun changePassword(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayerPass(request, "oldPassword") { body, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
-                val password = body.getString("newPassword")
-                if (password.length < 8) {
+                if (player.login.equals("test_standard", ignoreCase = true)) throw PlayerException(HttpStatus.NOT_ACCEPTABLE, "You cant change password on test user!")
+                val password = body.newPassword
+                if (password == null || password.length < 8) {
                     return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE, "Password size cannot be less than 8")
                 }
                 val hashedPassword = Utils.bcryptHash(password)
                 if (player.twoFaType != TwoFaType.NONE) {
-                    val queryBody = JSONObject()
-                    queryBody.put("newPassword", hashedPassword)
-                    tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.CHANGE_PASSWORD, player, queryBody))
+                    tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.CHANGE_PASSWORD, player, PlayerBody(newPassword = hashedPassword)))
                     return@runBlocking ResponseFactory.create(HttpStatus.ACCEPTED)
                 }
                 playerQuery.updatePlayer(player.setPassword(hashedPassword).setIp("password_changed"))
@@ -111,45 +128,44 @@ open class PlayerController {
     }
 
     @Post("/2fa/enable")
-    open fun twoFaEnable(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun twoFaEnable(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayerPass(request, "password") { body, player ->
             runBlocking {
-                val email = body.getString("email")
+                val email = body.email
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
-                if (!PlayerUtils.checkEmail(email)) {
+                if (email == null || !PlayerUtils.checkEmail(email)) {
                     return@runBlocking ResponseFactory.create(HttpStatus.METHOD_NOT_ALLOWED)
                 }
                 if (player.twoFaType != TwoFaType.NONE) {
                     return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE, player.twoFaType.toString())
                 }
-                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.ENABLE_TFA, player.setTwoFaType(TwoFaType.EMAIL).setTwoFa(email), JSONObject()))
+                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.ENABLE_TFA, player.setTwoFaType(TwoFaType.EMAIL).setTwoFa(email), PlayerBody()))
                 return@runBlocking ResponseFactory.create(HttpStatus.OK)
             }
         }
     }
 
     @Post("/2fa/disable")
-    open fun twoFaDisable(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun twoFaDisable(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayerPass(request, "password") { _, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.FORBIDDEN, playerNotFound)
                 if (player.twoFaType == TwoFaType.NONE) {
                     return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE)
                 }
-                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.DISABLE_TFA, player, JSONObject()))
+                tfaQuery.createQuery(request, PlayerUtils.getTwoFaData(QueryType.DISABLE_TFA, player, PlayerBody()))
                 return@runBlocking ResponseFactory.create(HttpStatus.OK)
             }
         }
     }
 
     @Post("/2fa/code")
-    open fun twoFaCode(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun twoFaCode(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayer(request) { body, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)
-                val query = tfaQuery.getQuery(body.getString("code"), player) ?: return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE)
+                val query = tfaQuery.getQuery(body.code, player) ?: return@runBlocking ResponseFactory.create(HttpStatus.NOT_ACCEPTABLE)
                 if (Instant.now() > query.time) throw QueryException(HttpStatus.FORBIDDEN, "2FA code is outdated!")
-                val queryBody = JSONObject(query.data)
                 when (query.queryType) {
                     QueryType.ENABLE_TFA      -> {
                         playerQuery.updatePlayer(player.setTwoFa(query.address).setTwoFaType(TwoFaType.EMAIL))
@@ -164,7 +180,12 @@ open class PlayerController {
                     }
 
                     QueryType.CHANGE_PASSWORD -> {
-                        playerQuery.updatePlayer(player.setPassword(queryBody.getString("newPassword")).setIp("password_changed"))
+                        playerQuery.updatePlayer(player.setPassword(Json.decodeFromString(PlayerBody.serializer(), query.data).newPassword)
+                                                     .setIp("password_changed"))
+                    }
+
+                    QueryType.ACCOUNT_REMOVE  -> {
+                        playerQuery.removePlayer(player)
                     }
                 }
                 return@runBlocking ResponseFactory.create(HttpStatus.OK, query.queryType.toString())
@@ -173,7 +194,7 @@ open class PlayerController {
     }
 
     @Post("/check")
-    open fun checkPlayer(request: HttpRequest<String?>): HttpResponse<Response> {
+    open fun checkPlayer(request: HttpRequest<String?>): HttpResponse<String> {
         return PlayerUtils.runOnPlayer(request) { _, player ->
             runBlocking {
                 if (player == null) throw PlayerException(HttpStatus.NOT_FOUND, playerNotFound)

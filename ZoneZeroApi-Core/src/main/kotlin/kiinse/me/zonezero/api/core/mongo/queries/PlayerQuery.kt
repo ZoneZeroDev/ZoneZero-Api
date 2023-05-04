@@ -100,9 +100,9 @@ object PlayerQuery {
         )
     }
 
-    fun removePlayer(jwt: String) {
+    fun removePlayer(login: String) {
         val query = Document()
-        query["_id"] = jwt
+        query["_id"] = login
         collection!!.findOneAndDelete(query)
     }
 

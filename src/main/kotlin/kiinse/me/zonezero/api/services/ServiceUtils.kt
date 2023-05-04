@@ -11,7 +11,6 @@ import org.apache.http.HttpResponse
 import org.apache.http.HttpVersion
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
-import org.json.JSONObject
 import java.nio.charset.StandardCharsets
 
 object ServiceUtils {
@@ -23,7 +22,7 @@ object ServiceUtils {
             getServerAnswer(getRequestGet(address.value + path, request).execute().returnResponse())
         } catch (e: Exception) {
             Sentry.captureException(e)
-            ServerAnswer(500, JSONObject())
+            ServerAnswer(500, null)
         }
     }
 
@@ -32,7 +31,7 @@ object ServiceUtils {
             getServerAnswer(getRequestPost(address.value + path, request).execute().returnResponse())
         } catch (e: Exception) {
             Sentry.captureException(e)
-            ServerAnswer(500, JSONObject())
+            ServerAnswer(500, null)
         }
     }
 
@@ -59,7 +58,7 @@ object ServiceUtils {
         request.socketTimeout(timeout)
         request.useExpectContinue()
         request.version(HttpVersion.HTTP_1_1)
-        request.bodyString(RequestUtils.getBody(req).toString(), ContentType.APPLICATION_JSON)
+        request.bodyString(RequestUtils.getBody(req), ContentType.APPLICATION_JSON)
         req.headers.forEachValue { key, value ->
             try {
                 if (key != "Content-Length")  {
@@ -80,6 +79,6 @@ object ServiceUtils {
             } catch (e: Exception) { "" }
         } else { "" }
         val responseCode = response.statusLine.statusCode
-        return ServerAnswer(responseCode, JSONObject(content))
+        return ServerAnswer(responseCode, content)
     }
 }

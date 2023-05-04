@@ -4,6 +4,8 @@ import com.mongodb.client.MongoCollection
 import io.micronaut.http.HttpRequest
 import io.micronaut.http.HttpStatus
 import kiinse.me.zonezero.api.core.config.Addresses
+import kiinse.me.zonezero.api.core.email.Email
+import kiinse.me.zonezero.api.core.email.EmailTemplate
 import kiinse.me.zonezero.api.core.exceptions.ConfigException
 import kiinse.me.zonezero.api.core.exceptions.EmailException
 import kiinse.me.zonezero.api.core.mongo.MongoDb
@@ -13,9 +15,7 @@ import kiinse.me.zonezero.api.core.twofa.TwoFaData
 import kiinse.me.zonezero.api.core.twofa.enums.QueryType
 import kiinse.me.zonezero.api.core.utils.TwoFaUtils
 import org.bson.Document
-import org.json.JSONObject
 import java.time.Instant
-import java.util.HashMap
 
 object TwoFaQuery {
 
@@ -44,28 +44,23 @@ object TwoFaQuery {
 
     fun createQuery(request: HttpRequest<String?>, data: TwoFaData): Boolean {
         removeQuery(data.player)
-        val send = TwoFaUtils.post(request, Addresses.EMAIL, "send", getCodeEmail(data))
-        if (send.code != 200) throw EmailException(HttpStatus.INTERNAL_SERVER_ERROR, send.body.toString())
+        val send = TwoFaUtils.post(request, Addresses.EMAIL, "send", Email.serializer(), getCodeEmail(data))
+        if (send.code != 200) throw EmailException(HttpStatus.INTERNAL_SERVER_ERROR, send.body)
         collection!!.insertOne(dataToDocument(data))
         return true
     }
 
-    private fun getCodeEmail(data: TwoFaData): JSONObject {
-        val json = JSONObject()
-        json.put("address", data.address)
-        json.put("subject", "ZoneZero | 2Fa")
-        val template = JSONObject()
-        template.put("name", "code")
-        val hashmap = HashMap<String, String>()
-        hashmap["projectTitle"] = "ZoneZero"
-        hashmap["label"] = "Action confirm | ${data.queryType.value}"
-        hashmap["text"] = "Use this command on the server. If you did not request this code on servers with the ZoneZero plugin, then you can safely delete this message. Code validity time: 10 minutes."
-        hashmap["code"] = "/2fa ${data.code}"
-        hashmap["footer"] = "You have received this email because we have received a request to confirm some action from the minecraft server with the ZoneZero plugin installed. If you have not done anything that would require this code, then you can safely delete this letter."
-        hashmap["url"] = "https://zonezero.dev/"
-        template.put("data", hashmap)
-        json.put("template", template)
-        return json
+    private fun getCodeEmail(data: TwoFaData): Email {
+        return Email(data.address,
+                     "ZoneZero | 2Fa",
+                     EmailTemplate("code",
+                                  hashMapOf(
+                                      Pair("projectTitle", "ZoneZero"),
+                                      Pair("label", "Action confirm | ${data.queryType.value}"),
+                                      Pair("text", "Use this command on the server. If you did not request this code on servers with the ZoneZero plugin, then you can safely delete this message. Code validity time: 10 minutes."),
+                                      Pair("code", "/2fa ${data.code}"),
+                                      Pair("footer", "You have received this email because we have received a request to confirm some action from the minecraft server with the ZoneZero plugin installed. If you have not done anything that would require this code, then you can safely delete this letter."),
+                                      Pair("url", "https://zonezero.dev/"), )))
     }
 
     fun hasQuery(code: String): Boolean {
@@ -75,7 +70,8 @@ object TwoFaQuery {
         return result != null && !result.isEmpty()
     }
 
-    fun getQuery(code: String, player: Player): TwoFaData? {
+    fun getQuery(code: String?, player: Player): TwoFaData? {
+        if (code == null) return null
         val query = Document()
         query["_id"] = code
         query["player"] = player.login

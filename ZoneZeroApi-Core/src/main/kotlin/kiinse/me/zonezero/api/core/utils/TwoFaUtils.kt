@@ -3,38 +3,38 @@ package kiinse.me.zonezero.api.core.utils
 import io.micronaut.http.HttpRequest
 import kiinse.me.zonezero.api.core.config.Addresses
 import kiinse.me.zonezero.api.core.services.ServerAnswer
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.json.Json
 import org.apache.commons.io.IOUtils
 import org.apache.http.HttpResponse
 import org.apache.http.HttpVersion
 import org.apache.http.client.fluent.Request
 import org.apache.http.entity.ContentType
-import org.json.JSONObject
-import org.mindrot.jbcrypt.BCrypt
 import java.nio.charset.StandardCharsets
 
 object TwoFaUtils {
 
     private const val timeout = 20000
 
-    fun post(request: HttpRequest<String?>, address: Addresses, path: String, data: JSONObject): ServerAnswer {
+    fun <T> post(request: HttpRequest<String?>, address: Addresses, path: String, strategy: SerializationStrategy<T>, value: T): ServerAnswer {
         return try {
-            getServerAnswer(getRequestPost(address.value + path, request, data).execute().returnResponse())
+            return getServerAnswer(getRequestPost(address.value + path, request, strategy, value).execute().returnResponse())
         } catch (e: Exception) {
-            ServerAnswer(500, JSONObject())
+            ServerAnswer(500)
         }
     }
 
-    private fun getRequestPost(address: String, req: HttpRequest<String?>, data: JSONObject): Request {
+    private fun <T> getRequestPost(address: String, req: HttpRequest<String?>, strategy: SerializationStrategy<T>, value: T): Request {
         val request = Request.Post(address)
         request.connectTimeout(timeout)
         request.socketTimeout(timeout)
         request.useExpectContinue()
         request.version(HttpVersion.HTTP_1_1)
-        request.bodyString(data.toString(), ContentType.APPLICATION_JSON)
-        req.headers.forEachValue { key, value ->
+        request.bodyString(Json.encodeToString(strategy, value), ContentType.APPLICATION_JSON)
+        req.headers.forEachValue { key, content ->
             try {
                 if (key != "Content-Length")  {
-                    request.addHeader(key, value)
+                    request.addHeader(key, content)
                 }
             } catch (e: Exception) {e.printStackTrace()}
         }
@@ -48,6 +48,6 @@ object TwoFaUtils {
             } catch (e: Exception) { "" }
         } else { "" }
         val responseCode = response.statusLine.statusCode
-        return ServerAnswer(responseCode, JSONObject(content))
+        return ServerAnswer(responseCode, content)
     }
 }

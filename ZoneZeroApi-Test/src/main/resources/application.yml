@@ -1,0 +1,7 @@
+micronaut:
+  server:
+    port: 7228
+  application:
+    name: ZoneZeroAPI-Test
+  security:
+    enabled: false

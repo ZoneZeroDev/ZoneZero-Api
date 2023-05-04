@@ -10,11 +10,12 @@ import kiinse.me.zonezero.api.core.players.Player
 import kiinse.me.zonezero.api.core.twofa.TwoFaData
 import kiinse.me.zonezero.api.core.twofa.enums.QueryType
 import kiinse.me.zonezero.api.core.utils.RequestUtils
-import kiinse.me.zonezero.api.core.utils.Response
+import kiinse.me.zonezero.api.services.body.PlayerBody
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import org.json.JSONObject
+import kotlinx.serialization.json.Json
 import java.time.Instant
+import java.util.*
 import java.util.concurrent.TimeUnit
 import java.util.regex.Pattern
 import kotlin.random.Random
@@ -48,10 +49,10 @@ object PlayerUtils {
             .joinToString("")
     }
 
-    fun runOnPlayer(request: HttpRequest<String?>, runnable: (JSONObject, Player?) -> HttpResponse<Response>): HttpResponse<Response> {
+    fun runOnPlayer(request: HttpRequest<String?>, runnable: (PlayerBody, Player?) -> HttpResponse<String>): HttpResponse<String> {
         return RequestUtils.runWithCatch {
             return@runWithCatch runBlocking {
-                val body = async { RequestUtils.getBody(request) }
+                val body = async { Json.decodeFromString(PlayerBody.serializer(), RequestUtils.getBody(request)) }
                 val playerName = async { RequestUtils.getHeader(request, "player") }
                 val player = async { Player.valueOf(playerName.await()) }
                 runnable(body.await(), player.await())
@@ -59,12 +60,12 @@ object PlayerUtils {
         }
     }
 
-    fun runOnPlayerPass(request: HttpRequest<String?>, passwordKey: String, runnable: (JSONObject, Player?) -> HttpResponse<Response>): HttpResponse<Response> {
+    fun runOnPlayerPass(request: HttpRequest<String?>, passwordKey: String, runnable: (PlayerBody, Player?) -> HttpResponse<String>): HttpResponse<String> {
         return RequestUtils.runWithCatch {
             return@runWithCatch runBlocking {
-                val body = async { RequestUtils.getBody(request) }
+                val body = async { Json.decodeFromString(PlayerBody.serializer(), RequestUtils.getBody(request)) }
                 val playerName = async { RequestUtils.getHeader(request, "player") }
-                val password = async { body.await().getString(passwordKey) }
+                val password = async { body.await().getThroughReflection<String>(passwordKey) }
                 val player = async { Player.valueOf(playerName.await(), password.await()) }
                 if (player.await() == null && playerQuery.hasPlayer(playerName.await())) {
                     throw PlayerException(HttpStatus.UNAUTHORIZED, "Wrong password!")
@@ -74,9 +75,9 @@ object PlayerUtils {
         }
     }
 
-    suspend fun getTwoFaData(type: QueryType, player: Player, body: JSONObject): TwoFaData = runBlocking {
+    suspend fun getTwoFaData(type: QueryType, player: Player, body: PlayerBody): TwoFaData = runBlocking {
         val code = async { getCode() }
-        val stringBody = async { body.toString() }
+        val stringBody = async { Json.encodeToString(PlayerBody.serializer(), body) }
         return@runBlocking TwoFaData(
             code.await(),
             type,
@@ -88,15 +89,17 @@ object PlayerUtils {
         )
     }
 
-    fun getStringOrNull(body: JSONObject, key: String): String? {
-        return try {
-            body.getString(key)
-        } catch (e: Exception) {
-            null
-        }
+    fun getPlayerIp(body: PlayerBody): String? {
+        val ip = body.ip ?: return null
+        return ip.replace("/", "")
     }
 
-    fun getPlayerIp(body: JSONObject): String? {
-        return getStringOrNull(body, "ip")?.replace("/", "")
+    private inline fun <reified T : Any> Any.getThroughReflection(propertyName: String): T? {
+        val getterName = "get" + propertyName.replaceFirstChar { if (it.isLowerCase()) it.titlecase(Locale.getDefault()) else it.toString() }
+        return try {
+            javaClass.getMethod(getterName).invoke(this) as? T
+        } catch (e: NoSuchMethodException) {
+            null
+        }
     }
 }

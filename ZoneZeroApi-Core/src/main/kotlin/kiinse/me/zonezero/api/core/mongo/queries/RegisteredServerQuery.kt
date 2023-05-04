@@ -5,8 +5,8 @@ import kiinse.me.zonezero.api.core.exceptions.ConfigException
 import kiinse.me.zonezero.api.core.mongo.MongoDb
 import kiinse.me.zonezero.api.core.server.QueryServer
 import kiinse.me.zonezero.api.core.server.RegisteredServer
+import kiinse.me.zonezero.api.core.server.RegisteredServersList
 import org.bson.Document
-import org.json.JSONObject
 
 object RegisteredServerQuery {
 
@@ -135,15 +135,15 @@ object RegisteredServerQuery {
         return parseServerResult(collection!!.find(query).first())
     }
 
-    fun getServersByEmail(email: String): JSONObject {
+    fun getServersByEmail(email: String): RegisteredServersList {
         val query = Document()
         query["email"] = email
-        val json = JSONObject()
+        val map = hashMapOf<String, RegisteredServer>()
         collection!!.find(query).forEach {
             val server = parseServerResult(it)!!
-            json.put(server.getId(), server.toJson())
+            map[server.getId()] = server
         }
-        return json
+        return RegisteredServersList(map)
     }
 
     fun hasServer(ip: String, email: String): Boolean {

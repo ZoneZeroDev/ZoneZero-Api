@@ -7,8 +7,9 @@ import kiinse.me.zonezero.api.core.rsa.enums.KeyType
 import kiinse.me.zonezero.api.core.rsa.interfaces.RSAProvider
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
+import kotlinx.serialization.SerializationStrategy
+import kotlinx.serialization.json.Json
 import org.apache.commons.codec.binary.Base64
-import org.json.JSONObject
 import java.security.*
 import java.security.spec.X509EncodedKeySpec
 import java.util.*
@@ -17,7 +18,6 @@ import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
 import javax.crypto.spec.SecretKeySpec
 
-@Suppress("UNUSED")
 class RSA : RSAProvider {
 
     private val keys: MutableMap<KeyType, Key> = EnumMap(KeyType::class.java)
@@ -41,7 +41,7 @@ class RSA : RSAProvider {
     }
 
     @Throws(RSAException::class)
-    override fun decrypt(encrypted: EncryptedMessage): JSONObject = runBlocking {
+    override fun decrypt(encrypted: EncryptedMessage): String = runBlocking {
         try {
             val cipher = Cipher.getInstance(rsa)
             cipher.init(Cipher.DECRYPT_MODE, keys[KeyType.PRIVATE])
@@ -53,7 +53,7 @@ class RSA : RSAProvider {
                 return@async aesCipher
             }
             val message = async { Base64.decodeBase64(encrypted.message) }
-            return@runBlocking JSONObject(String(aesCipher.await().doFinal(message.await())))
+            return@runBlocking String(aesCipher.await().doFinal(message.await()))
         } catch (e: Exception) {
             throw RSAException(HttpStatus.INTERNAL_SERVER_ERROR, e)
         }
@@ -74,8 +74,7 @@ class RSA : RSAProvider {
         return publicKeyString
     }
 
-    @Throws(RSAException::class)
-    override fun encrypt(json: JSONObject, publicKey: PublicKey): EncryptedMessage = runBlocking {
+    override fun encrypt(string: String, publicKey: PublicKey): EncryptedMessage = runBlocking {
         val generator = async {
             val generator = KeyGenerator.getInstance(aes)
             generator.init(128)
@@ -93,12 +92,12 @@ class RSA : RSAProvider {
             return@async cipher
         }
         val aes = async { Base64.encodeBase64String(cipher.await().doFinal(aesKey.encoded)) }
-        val message = async { Base64.encodeBase64String(aesCipher.await().doFinal(json.toString().toByteArray())) }
+        val message = async { Base64.encodeBase64String(aesCipher.await().doFinal(string.toByteArray())) }
         return@runBlocking EncryptedMessage(aes.await(), message.await())
     }
 
     @Throws(RSAException::class)
-    override fun encrypt(string: String, publicKey: PublicKey): String = runBlocking {
+    override fun encryptRsa(string: String, publicKey: PublicKey): String = runBlocking {
         val cipher = async {
             val cipher = Cipher.getInstance(rsa)
             cipher.init(Cipher.ENCRYPT_MODE, publicKey)

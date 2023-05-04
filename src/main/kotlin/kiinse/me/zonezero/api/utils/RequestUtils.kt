@@ -5,16 +5,14 @@ import io.micronaut.http.HttpResponse
 import io.micronaut.http.HttpStatus
 import io.micronaut.http.exceptions.HttpStatusException
 import io.sentry.Sentry
+import kiinse.me.zonezero.api.core.body.DataAnswer
 import kiinse.me.zonezero.api.core.exceptions.RSAException
 import kiinse.me.zonezero.api.core.exceptions.RequestException
 import kiinse.me.zonezero.api.core.rsa.data.EncryptedMessage
-import kiinse.me.zonezero.api.core.utils.Response
 import kiinse.me.zonezero.api.core.security.Account
 import kiinse.me.zonezero.api.security.ApiRSA
 import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
-import org.json.JSONException
-import org.json.JSONObject
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -23,11 +21,11 @@ object RequestUtils {
 
     private val logger: Logger = LoggerFactory.getLogger(this::class.java)
 
-    fun runOnAccount(request: HttpRequest<String?>, runnable: (Account) -> HttpResponse<Response>): HttpResponse<Response> {
+    fun runOnAccount(request: HttpRequest<String?>, runnable: (Account) -> HttpResponse<DataAnswer>): HttpResponse<DataAnswer> {
         return runWithCatch(request) { return@runWithCatch runnable(Account.byJwt(getBearer(request))) }
     }
 
-    fun runOnBody(request: HttpRequest<String?>, runnable: (JSONObject, Account) -> HttpResponse<Response>): HttpResponse<Response> = runBlocking {
+    fun runOnBody(request: HttpRequest<String?>, runnable: (String, Account) -> HttpResponse<DataAnswer>): HttpResponse<DataAnswer> = runBlocking {
         val body = async { getBody(request) }
         val bearer = async { getBearer(request) }
         val account = async { Account.byJwt(bearer.await()) }
@@ -38,11 +36,11 @@ object RequestUtils {
         }
     }
 
-    fun runOnBody(request: HttpRequest<String?>, runnable: (JSONObject) -> HttpResponse<Response>): HttpResponse<Response> {
+    fun runOnBody(request: HttpRequest<String?>, runnable: (String) -> HttpResponse<DataAnswer>): HttpResponse<DataAnswer> {
         return runWithCatch(request) { return@runWithCatch runnable(getBody(request)) }
     }
 
-    private fun runWithCatch(request: HttpRequest<String?>, runnable: () -> HttpResponse<Response>): HttpResponse<Response> {
+    private fun runWithCatch(request: HttpRequest<String?>, runnable: () -> HttpResponse<DataAnswer>): HttpResponse<DataAnswer> {
         return try {
             runnable()
         } catch (exception: Exception) {
@@ -86,11 +84,11 @@ object RequestUtils {
     }
 
     @Suppress("UNCHECKED_CAST")
-    @Throws(JSONException::class, RSAException::class, RequestException::class)
-    fun getBody(request: HttpRequest<*>?): JSONObject {
-        if (request == null) return JSONObject()
+    @Throws(RSAException::class, RequestException::class)
+    fun getBody(request: HttpRequest<*>?): String {
+        if (request == null) return ""
         val optionalBody = (request as HttpRequest<String?>).body
-        if (optionalBody.isEmpty || optionalBody.get().isBlank()) return JSONObject()
+        if (optionalBody.isEmpty || optionalBody.get().isBlank()) return ""
         val aes = getHeader(request, "security")
         if (aes.isNullOrEmpty()) throw RequestException(HttpStatus.NOT_ACCEPTABLE, "No security key in headers!")
         return ApiRSA.get().decrypt(EncryptedMessage(aes, optionalBody.get().toByteArray().toString(charset("UTF-8"))))

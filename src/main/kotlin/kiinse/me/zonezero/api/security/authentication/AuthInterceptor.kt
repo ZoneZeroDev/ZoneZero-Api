@@ -64,12 +64,12 @@ class AuthInterceptor : MethodInterceptor<Any, Any> {
                 is HttpStatusException -> {
                     if (exception.status == HttpStatus.INTERNAL_SERVER_ERROR) {
                         Sentry.captureException(exception)
-                        logger.warn("Handled anomaly exception! Message:" + exception.message)
+                        logger.warn("Handled anomaly exception! Message: ${exception.message}")
                     }
                     return@runBlocking ResponseFactory.create(request, exception)
                 }
                 else                   -> {
-                    logger.warn("Handled anomaly exception! Message:" + exception.message)
+                    logger.warn("Handled anomaly exception! Message: ${exception.message}")
                     Sentry.captureException(exception)
                     ResponseFactory.create(request, HttpStatus.INTERNAL_SERVER_ERROR, exception)
                 }

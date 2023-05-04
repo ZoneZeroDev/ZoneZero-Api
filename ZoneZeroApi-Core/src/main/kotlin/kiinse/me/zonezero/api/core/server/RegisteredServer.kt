@@ -1,8 +1,9 @@
 package kiinse.me.zonezero.api.core.server
 
 import kiinse.me.zonezero.api.core.mongo.queries.RegisteredServerQuery
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class RegisteredServer(
     val email: String,
     val name: String,
@@ -20,7 +21,7 @@ data class RegisteredServer(
     val generateStructures: Boolean,
     val spawnRadius: Int,
     val viewDistance: Int,
-    val worlds: Set<Any>,
+    val worlds: Set<String>,
     val ip: String) {
 
     companion object {
@@ -35,29 +36,5 @@ data class RegisteredServer(
 
     fun getId(): String {
         return name + ip + settingsPort + maxPlayers + bukkitVersion + email
-    }
-
-    fun toJson(): JSONObject {
-        val json = JSONObject()
-        json.put("_id", getId())
-        json.put("email", email)
-        json.put("name", name)
-        json.put("maxPlayers", maxPlayers)
-        json.put("pluginVersion", pluginVersion)
-        json.put("allowEnd", allowEnd)
-        json.put("allowNether", allowNether)
-        json.put("allowFlight", allowFlight)
-        json.put("bukkitVersion", bukkitVersion)
-        json.put("monsterSpawnLimit", monsterSpawnLimit)
-        json.put("settingsIp", settingsIp)
-        json.put("motd", motd)
-        json.put("settingsPort", settingsPort)
-        json.put("worldType", worldType)
-        json.put("generateStructures", generateStructures)
-        json.put("spawnRadius", spawnRadius)
-        json.put("viewDistance", viewDistance)
-        json.put("worlds", worlds)
-        json.put("ip", ip)
-        return json
     }
 }

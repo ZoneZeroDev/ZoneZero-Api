@@ -9,7 +9,7 @@ plugins {
     id("io.micronaut.application") version "3.6.3"
 }
 
-version = "1.0.5"
+version = "2.0.0"
 group = "kiinse.me.zonezero.api"
 java.sourceCompatibility = JavaVersion.VERSION_19
 
@@ -31,7 +31,6 @@ dependencies {
 
     implementation("org.mongodb:mongo-java-driver:3.12.12")
     implementation("com.auth0:java-jwt:4.3.0")
-    implementation("org.json:json:20230227")
     implementation("org.slf4j:slf4j-api:2.0.5")
     implementation("org.slf4j:slf4j-log4j12:2.0.5")
     implementation("org.apache.logging.log4j:log4j-core:2.20.0")

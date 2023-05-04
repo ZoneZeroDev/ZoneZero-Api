@@ -11,6 +11,7 @@ import jakarta.mail.PasswordAuthentication
 import jakarta.mail.Session
 import jakarta.mail.internet.InternetAddress
 import jakarta.mail.internet.MimeMessage
+import kiinse.me.zonezero.api.core.email.Email
 import kiinse.me.zonezero.api.core.exceptions.EmailException
 import org.thymeleaf.context.Context
 import java.io.File

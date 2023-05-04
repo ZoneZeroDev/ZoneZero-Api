@@ -7,10 +7,11 @@ import kiinse.me.zonezero.api.core.exceptions.AuthException
 import kiinse.me.zonezero.api.core.mongo.queries.AccountQuery
 import kiinse.me.zonezero.api.core.security.enums.AccountType
 import kiinse.me.zonezero.api.core.utils.Utils
-import org.json.JSONObject
+import kotlinx.serialization.Serializable
 import java.text.SimpleDateFormat
 import java.util.*
 
+@Serializable
 data class Account(val username: String,
                    val email: String,
                    val password: String,
@@ -44,15 +45,6 @@ data class Account(val username: String,
 
     fun expiresAtString(): String {
         return SimpleDateFormat("dd.MM.yyyy 'at' HH:mm:ss z").format(expiresAtDate())
-    }
-
-    fun toJson(): JSONObject {
-        val json = JSONObject()
-        json.put("username", username)
-        json.put("email", email)
-        json.put("jwt", jwt)
-        json.put("type", username)
-        return json
     }
 
     override fun hashCode(): Int {

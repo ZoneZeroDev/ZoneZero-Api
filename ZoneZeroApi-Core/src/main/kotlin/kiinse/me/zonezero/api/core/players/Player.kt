@@ -4,7 +4,9 @@ import kiinse.me.zonezero.api.core.mongo.queries.PlayerQuery
 import kiinse.me.zonezero.api.core.players.enums.TwoFaType
 import kiinse.me.zonezero.api.core.security.Account
 import kiinse.me.zonezero.api.core.utils.Utils
+import kotlinx.serialization.Serializable
 
+@Serializable
 data class Player(val login: String?, var password: String?, var twoFaType: TwoFaType, var twoFa: String?, var lastIp: String?) {
 
     companion object {
