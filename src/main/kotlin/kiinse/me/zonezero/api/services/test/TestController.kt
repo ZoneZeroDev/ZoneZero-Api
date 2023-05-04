@@ -31,7 +31,7 @@ open class TestController {
     @Get("/getTestMessageGet")
     @Authentication(permissions = [AccountType.ALL])
     open fun getTestMessageGet(request: HttpRequest<String?>): HttpResponse<DataAnswer> {
-        val response = ServiceUtils.post(request, Addresses.TEST, "getTestMessageGet")
+        val response = ServiceUtils.get(request, Addresses.TEST, "getTestMessageGet")
         return ResponseFactory.create(request, HttpStatus.valueOf(response.code), response.body)
     }
 
